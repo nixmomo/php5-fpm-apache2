@@ -61,7 +61,7 @@ apache_remove_default_vhost: true
 
 apache_global_vhost_settings: |
   DirectoryIndex index.php index.html
-
+vhost_documentroot: "/var/www/html"
 apache_vhosts:
   # Additional properties:
   # 'serveradmin, serveralias, allow_override, options, extra_parameters'.
