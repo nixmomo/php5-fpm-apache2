@@ -1,0 +1,147 @@
+---
+- name: Install PHP Repo dependencies.
+  apt: "name={{ item }} state=latest install_recommends=yes force_apt_get=yes allow_unauthenticated=yes dpkg_options=force-confold,force-confdef"
+  with_items: "{{ php_dep_install_packages }}"
+- name: get php5 repo key
+  shell: wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+
+- name: create php5 repo
+  shell: echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
+
+- name: Install PHP Packages.
+  apt: "name={{ item }} state=latest install_recommends=yes force_apt_get=yes allow_unauthenticated=yes dpkg_options=force-confold,force-confdef"
+  with_items: "{{ php_install_packages }}"
+
+- name: is installed
+
+  package:
+      name: php5.6-fpm
+      state: latest
+
+
+- name: main php configuration
+
+  template:
+      src: php-fpm.conf.j2
+      dest: /etc/php/5.6/fpm/php-fpm.conf
+      owner: root
+      group: root
+      mode: 0644
+
+- name: php ini configuration
+  template:
+      src: php.ini
+      dest: /etc/php/5.6/fpm/php.ini
+      owner: root
+      group: root
+      mode: 0644
+
+- name: cert configuration
+  template:
+      src: {{ cert }}
+      dest: /home/{{ cert }}
+      owner: root
+      group: root
+      mode: 0644
+
+- name: certca configuration
+  template:
+      src: {{ certca }}
+      dest: /home/{{ certca }}
+      owner: root
+      group: root
+      mode: 0644
+
+- name: cert key configuration
+  template:
+      src: {{ certkey }}
+      dest: /home/{{ certkey }}
+      owner: root
+      group: root
+      mode: 0644
+
+- name: create pool access logfiles
+  shell: touch {{ pool_access_log }}
+
+- name: create pool error logfiles
+  shell: touch {{ pool_error_log }}
+
+- name: create pool error logfiles
+  shell: rm /etc/php/5.6/fpm/pool.d/www.conf
+
+- name: pool configuration
+
+  template:
+      src: php5-fpm-www.conf.j2
+      dest: /etc/php/5.6/fpm/pool.d/{{ php5_fpm.poolname }}.conf
+      owner: root
+      group: root
+      mode: 0644
+
+  notify:
+      - restart php5.6-fpm
+
+- name: enabled
+
+  systemd:
+      name: php5.6-fpm
+      enabled: yes
+
+- name: started
+
+  systemd:
+      name: php5.6-fpm
+      state: started
+
+  tags: live
+
+# Include variables and define needed variables.
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Include variables for Amazon Linux.
+  include_vars: "AmazonLinux.yml"
+  when: ansible_distribution == "Amazon" and ansible_distribution_major_version == "NA"
+
+- name: Define apache_packages.
+  set_fact:
+    apache_packages: "{{ __apache_packages | list }}"
+  when: apache_packages is not defined
+
+# Setup/install tasks.
+- include: "setup-{{ ansible_os_family }}.yml"
+  static: no
+
+# Figure out what version of Apache is installed.
+- name: Get installed version of Apache.
+  shell: "{{ apache_daemon_path }}{{ apache_daemon }} -v"
+  changed_when: false
+  check_mode: no
+  register: _apache_version
+
+- name: Create apache_version variable.
+  set_fact:
+    apache_version: "{{ _apache_version.stdout.split()[2].split('/')[1] }}"
+
+- include_vars: apache-22.yml
+  when: "apache_version.split('.')[1] == '2'"
+
+- include_vars: apache-24.yml
+  when: "apache_version.split('.')[1] == '4'"
+
+# Configure Apache.
+- include: "configure-{{ ansible_os_family }}.yml"
+  static: no
+
+- name: Ensure Apache has selected state and enabled on boot.
+  service:
+    name: "{{ apache_service }}"
+    state: "{{ apache_state }}"
+    enabled: yes
+- name: copy phpinfo into webroot
+  template:
+      src: info.php.j2
+      dest: {{ vhost.documentroot }}/info.php
+      owner: {{ php5_fpm.user }}
+      group: {{ php5_fpm.group }}  
+      mode: 0644

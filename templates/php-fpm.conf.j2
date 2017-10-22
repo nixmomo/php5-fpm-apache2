@@ -1,0 +1,13 @@
+[global]
+pid = /run/php/php5.6-fpm.pid
+error_log = {{ php_main_log }}
+syslog.ident = php-fpm
+log_level = {{ log_level }} 
+emergency_restart_threshold = 5
+emergency_restart_interval = 5
+process_control_timeout = 3
+process.max = {{ max_process }}
+daemonize = yes
+systemd_interval = 10
+include=/etc/php/5.6/fpm/pool.d/*.conf
+

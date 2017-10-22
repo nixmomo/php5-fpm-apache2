@@ -1,9 +1,5 @@
-# ansible role: php5-fpm
-
-configures php5-fpm + apache2 on a Debian Stretch
-
-possible variables
-
+---
+global: "[global]"
 ---
 # user for fpm to run
 php5_fpm:

@@ -1,0 +1,19 @@
+[{{ php5_fpm.poolname }}]
+user = {{ php5_fpm.user }}
+group = {{ php5_fpm.group }}
+listen = /var/run/php5-fpm-www.sock
+listen.owner = {{ listen_php_fpm.owner }}
+listen.group = {{ listen_php_fpm.group }}
+listen.allowed_clients = 
+pm = dynamic
+pm.max_children = 5
+pm.start_servers = 2
+pm.min_spare_servers = 1
+pm.max_spare_servers = 3
+pm.max_requests = 500
+access.log = {{ pool_access_log }}
+access.format = "%R - %u %t \"%m %r%Q%q\" %s %f %{mili}d %{kilo}M %C%%"
+security.limit_extensions = .php .php3 .php4 .php5
+php_admin_value[error_log] = {{ pool_error_log }}
+php_admin_flag[log_errors] = on
+php_admin_value[memory_limit] = {{ pool_memory }}
