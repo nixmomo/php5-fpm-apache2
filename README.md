@@ -1,4 +1,4 @@
-# ansible role: php5-fpm
+# ansible role: php5-fpm and apache2 on debian stretch
 
 configures php5-fpm + apache2 on a Debian Stretch
 
